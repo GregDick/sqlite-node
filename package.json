@@ -1,0 +1,22 @@
+{
+  "name": "sqlite-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GregDick/sqlite-node.git"
+  },
+  "author": "Greg Dick",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GregDick/sqlite-node/issues"
+  },
+  "homepage": "https://github.com/GregDick/sqlite-node#readme",
+  "dependencies": {
+    "sqlite3": "^3.0.10"
+  }
+}
