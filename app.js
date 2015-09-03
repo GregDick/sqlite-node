@@ -1,102 +1,102 @@
-var sqlite3 = require('sqlite3');
-var db = new sqlite3.Database('./Northwind.sl3');
+var pg = require('pg');
+var async = require('async');
 
-db.serialize(function (){
-  //create table
-  db.run("CREATE TABLE IF NOT EXISTS 'Category Favorites' ([FavoriteID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, [CategoryID] int NOT NULL)");
-  //insert starting data
-  db.run("INSERT INTO 'Category Favorites' (CategoryID) VALUES (2)");
-  db.run("INSERT INTO 'Category Favorites' (CategoryID) VALUES (4)");
-  db.run("INSERT INTO 'Category Favorites' (CategoryID) VALUES (6)");
-  db.run("INSERT INTO 'Category Favorites' (CategoryID) VALUES (8)");
-  //query table
-  db.run('', function (){
-    console.log('==========Category Favorites==========');
-  });
+var conString = "postgres://localhost/Northwind";
 
-  getCategoryFavorites();
-  //update data
-  updateFavorites();
-  //query table again
-  db.run('', function (){
-    console.log('==========Category Favorites==========');
-  });
+var client = new pg.Client(conString);
 
-  getCategoryFavorites();
-  //delete some data
-  deleteFavorites();
-  //insert some more data
-  db.run("INSERT INTO 'Category Favorites' (CategoryID) VALUES (1)");
-  //query table again
-  db.run('', function (){
-    console.log('==========Category Favorites==========');
-  });
+client.connect(function(err) {
+  if(err) {
+    return console.error('could not connect to postgres', err);
+  }
 
-  getCategoryFavorites();
-  //drop table so as not to duplicate data every time the app runs
-  db.run("DROP TABLE IF EXISTS 'Category Favorites' ");
-
-  // db.run('', function (){
-  //   console.log('==========Categories==========');
-  // });
-
-  // getCategories();
-
-  // db.run('', function (){
-  //   console.log('==========Products==========');
-  // });
-
-  // getProducts();
-
-  // db.run('', function (){
-  //   console.log('==========Employees==========');
-  // });
-
-  // getEmployeeSupers();
+  async.series([
+    function (cb) {
+      createTableAddData();
+      cb(null, 'one');
+    },
+    function (cb) {
+      getCategoryFavorites();
+      cb(null, 'two');
+    },
+    function(cb){
+      updateFavorites();
+      cb(null, 'three');
+    },
+    function(cb){
+      getCategoryFavorites();
+      cb(null, 'four');
+    },
+    function(cb){
+      deleteFavorites();
+      cb(null, 'five');
+    },
+    function(cb){
+      client.query('INSERT INTO CategoryFavorites ("CategoryID") VALUES (1)');
+      cb(null, 'six');
+    },
+    function(cb){
+      getCategoryFavorites();
+      cb(null, 'seven');
+    }
+  ]);
 
 });
 
-db.close();
-
-function getCategories () {
-
-  db.each('SELECT * FROM Categories', function (err, row){
-    console.log(row.Description.toString());
+function createTableAddData () {
+  client.query("DROP TABLE IF EXISTS CategoryFavorites", function(err){
+    if (err) {console.log(err)}
+  })
+  client.query('CREATE TABLE IF NOT EXISTS CategoryFavorites("FavoriteID" SERIAL NOT NULL PRIMARY KEY, "CategoryID" INTEGER NOT NULL)', function(err){
+    if (err) console.log(err);
   });
-};
-
-function getProducts () {
-
-  db.each('SELECT * FROM Products INNER JOIN Categories ON Products.CategoryID LIMIT 10', function (err, row){
-    console.log(row.ProductName + ' belongs to ' + row.CategoryName);
+  client.query('INSERT INTO CategoryFavorites ("CategoryID") VALUES (2)', function(err){
+    if (err) console.log(err);
   });
-};
-
-function getEmployeeSupers () {
-
-  //employee last name 's supervisor is supervisor last name
-  db.each('SELECT Employees.LastName AS EmployeeLastName, Supervisors.LastName AS SupervisorLastName FROM Employees LEFT OUTER JOIN Employees AS Supervisors ON Employees.ReportsTo = Supervisors.EmployeeID', function (err, row){
-    var supervisor = row.SupervisorLastName ? row.SupervisorLastName : 'no one.';
-    console.log(row.EmployeeLastName + ' reports to ' + supervisor);
+  client.query('INSERT INTO CategoryFavorites ("CategoryID") VALUES (4)', function(err){
+    if (err) console.log(err);
   });
-};
-
+  client.query('INSERT INTO CategoryFavorites ("CategoryID") VALUES (6)', function(err){
+    if (err) console.log(err);
+  });
+  client.query('INSERT INTO CategoryFavorites ("CategoryID") VALUES (8)', function(err){
+    if (err) console.log(err);
+  });
+}
 
 function getCategoryFavorites () {
-  db.each('SELECT "Category Favorites".FavoriteID, Categories.Description FROM "Category Favorites" LEFT OUTER JOIN Categories ON "Category Favorites".CategoryID = Categories.CategoryID', function (err, row) {
-    console.log(row.FavoriteID + ' likes ' + row.Description.toString());
+  client.query('SELECT CategoryFavorites."FavoriteID", Categories."Description" FROM CategoryFavorites LEFT OUTER JOIN Categories ON CategoryFavorites."CategoryID"=Categories."CategoryID"', function (err, result) {
+    if (err) console.log(err);
+    console.log(result.rows);
   });
 };
 
+
 function updateFavorites () {
-  db.each('UPDATE "Category Favorites" SET CategoryID = 5 WHERE FavoriteID = 2');
-}
+  client.query('UPDATE CategoryFavorites SET "CategoryID" = 5 WHERE "FavoriteID" = 2', function(err){
+    if (err) console.log(err);
+  });
+};
 
 function deleteFavorites () {
-  db.each('DELETE FROM "Category Favorites" WHERE FavoriteID = 3');
-}
+  client.query('DELETE FROM CategoryFavorites WHERE "FavoriteID" = 3', function(err){
+    if (err) console.log(err);
+  });
+};
 
+      // client.query('SELECT * FROM Categories', function(err, result) {
+      //   if(err) {
+      //     return console.error('error running query', err);
+      //   }
+      //   result.rows.forEach(function (row) {
+      //     for(key in row){
+      //       console.log(key, ':', row[key]);
+      //     }
+      //     console.log('\n');
+      //   });
 
+      //   client.end();
+      // });
 
 
 
